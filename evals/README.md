@@ -40,8 +40,10 @@ prepare command automatically builds the `@evjs/cli` dependency graph before
 packing. Framework packages' direct external dependencies are pinned through
 overrides from the source lock. An explicit `@swc/helpers@0.5.17` peer keeps
 SWC's peer resolution separate from Utoopack's nested `0.5.15` copy. Preparation
-checks the generated lock with `npm@11.6.2 ci --dry-run --ignore-scripts` before
-freezing it; this checks lock consistency, not build or runtime behavior. The
+uses real `npm@11.6.2 ci` and `install` to normalize optional peer entries,
+then repeats both from a clean dependency tree and requires a byte-identical
+lock. It removes `node_modules` before freezing; snapshots contain the lock and
+framework tarballs. This checks lock consistency, not build or runtime behavior. The
 snapshot records the commit, tarball hashes, dependency lock, public-doc hash,
 Skill hash, suite hash, Node version and platform. It lives in
 `evals/.generated/<hash>/`; `.generated/latest.json` points to it.

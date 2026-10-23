@@ -35,7 +35,7 @@ npm run evals:prepare
 不会把源码中的 `0.0.0` 当作已发布版本。prepare 会在打包前自动构建 `@evjs/cli` 依赖图，
 并从源码锁文件读取框架包直接外部依赖的版本，通过 overrides 固定。
 显式声明 `@swc/helpers@0.5.17` peer，使 SWC 的 peer 解析与 Utoopack 嵌套的 `0.5.15` 副本分开。
-冻结前执行 `npm@11.6.2 ci --dry-run --ignore-scripts` 检查生成锁的一致性；这不替代构建和运行验证。
+冻结前使用 `npm@11.6.2` 执行真实 `ci` 和 `install`，整理可选 peer 依赖条目；再从干净依赖树重复这两步，确认锁文件完全不变。随后移除 `node_modules`，快照只保存锁文件和框架 tarball。这不替代构建和运行验证。
 快照记录 Git commit、tarball hash、依赖锁、公开文档 hash、
 Skill hash、题库/工具 hash、Node 版本和平台。输出位于 `evals/.generated/<hash>/`，
 `.generated/latest.json` 指向最近一次快照。

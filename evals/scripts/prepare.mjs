@@ -4,6 +4,7 @@ import {
   mkdirSync,
   readFileSync,
   renameSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
@@ -154,20 +155,44 @@ exec(
   ],
   dependencyRoot,
 );
-// Reject internally inconsistent npm locks before freezing a snapshot.
-exec(
-  "npx",
-  [
-    "--yes",
-    "npm@11.6.2",
-    "ci",
-    "--dry-run",
-    "--ignore-scripts",
-    "--no-audit",
-    "--no-fund",
-  ],
-  dependencyRoot,
+// npm's lock-only resolver can retain optional peer entries that a real
+// install later prunes. Normalize before freezing, then repeat the exact
+// setup/native-install sequence from a clean tree and require a stable lock.
+const install = (command) =>
+  exec(
+    "npx",
+    ["--yes", "npm@11.6.2", command, "--no-audit", "--no-fund"],
+    dependencyRoot,
+  );
+const packageHash = sha256(
+  readFileSync(path.join(dependencyRoot, "package.json")),
 );
+process.stdout.write("Normalizing the lock with real ci/install...\n");
+install("ci");
+install("install");
+const normalizedLock = sha256(
+  readFileSync(path.join(dependencyRoot, "package-lock.json")),
+);
+process.stdout.write("Checking lock stability across a clean ci/install...\n");
+install("ci");
+install("install");
+if (
+  sha256(readFileSync(path.join(dependencyRoot, "package-lock.json"))) !==
+  normalizedLock
+)
+  throw new Error(
+    "Dependency lock is not stable across clean ci/install; cannot freeze snapshot",
+  );
+if (
+  sha256(readFileSync(path.join(dependencyRoot, "package.json"))) !==
+  packageHash
+)
+  throw new Error("Dependency installation changed the application manifest");
+// Snapshot artifacts contain locks and tarballs, never host node_modules.
+rmSync(path.join(dependencyRoot, "node_modules"), {
+  recursive: true,
+  force: true,
+});
 overlay(
   path.join(framework, "docs", "docs"),
   path.join(staging, "materials", "docs"),
