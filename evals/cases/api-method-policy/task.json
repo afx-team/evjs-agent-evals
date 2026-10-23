@@ -1,0 +1,13 @@
+{
+  "id": "api-method-policy",
+  "title": "修复 POST 策略作用域和请求体重复读取",
+  "category": "diagnosis",
+  "docs": ["docs/docs/server-routes.md", "docs/docs/project-structure.md"],
+  "remove": [],
+  "sourceReferences": [
+    "examples/api-routes/src/apis/api/posts/api.ts",
+    "examples/api-routes/src/apis/api/posts/validate-post.ts",
+    "packages/server/src/routes/api-handler.ts",
+    "packages/server/tests/api-handler.test.ts"
+  ]
+}

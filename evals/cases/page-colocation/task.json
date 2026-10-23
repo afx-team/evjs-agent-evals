@@ -1,0 +1,13 @@
+{
+  "id": "page-colocation",
+  "title": "新增 Page 并保持同目录辅助代码私有",
+  "category": "pages",
+  "expectedStarterFailure": { "phase": "behavior" },
+  "docs": ["docs/docs/project-structure.md", "docs/docs/client-routes.md"],
+  "remove": [],
+  "sourceReferences": [
+    "packages/ev/src/_internal/build/conventions/page-route-conventions.ts",
+    "packages/ev/src/_internal/build/discovery/page-routes.ts",
+    "packages/ev/tests/build-tools-page-routes.test.ts"
+  ]
+}

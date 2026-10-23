@@ -1,0 +1,21 @@
+{
+  "id": "fixed-api-root-migration",
+  "title": "迁移已移除的 server.routing.dir 配置",
+  "category": "migration",
+  "docs": [
+    "docs/docs/server-routes.md",
+    "docs/docs/project-structure.md",
+    "docs/docs/config.md"
+  ],
+  "remove": ["src/endpoints"],
+  "sourceReferences": [
+    "CHANGELOG.md",
+    "packages/ev/src/_internal/build/conventions/server-route-conventions.ts",
+    "packages/ev/tests/config.test.ts",
+    "packages/ev/tests/build-tools-server-routes.test.ts"
+  ],
+  "expectedStarterFailure": {
+    "phase": "inspect",
+    "errorIncludes": "server.routing"
+  }
+}

@@ -1,0 +1,131 @@
+name: Model benchmark (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: Exact Claude model ID (no moving alias)
+        required: true
+        type: string
+      cli_package:
+        description: Exact @anthropic-ai/claude-code package, including version
+        required: true
+        type: string
+      runs:
+        description: Repetitions per task and condition
+        required: true
+        default: '3'
+        type: choice
+        options: ['1', '2', '3']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: model-benchmark
+  cancel-in-progress: false
+
+jobs:
+  credentials:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check required secret and exact CLI package
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLI_PACKAGE: ${{ inputs.cli_package }}
+          MODEL_ID: ${{ inputs.model }}
+        run: |
+          node -e 'if (!process.env.ANTHROPIC_API_KEY) throw new Error("Configure repository secret ANTHROPIC_API_KEY first"); if (!/^@anthropic-ai\/claude-code@\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(process.env.CLI_PACKAGE)) throw new Error("Use an exact CLI package version"); if (!process.env.MODEL_ID.trim()) throw new Error("Model ID required");'
+  prepare:
+    needs: credentials
+    uses: ./.github/workflows/validate.yml
+  evaluate:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        condition: [baseline, docs, skill]
+        task: [page-colocation, nested-dynamic-page, page-metadata, api-method-policy, fixed-api-root-migration, server-function-mutation]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: evals/package-lock.json
+      - name: Install evaluation tools
+        run: |
+          npm install --global npm@11.6.2
+          npm ci --prefix evals --no-audit --no-fund
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: frozen-snapshot
+          path: artifacts
+      - name: Restore shared snapshot
+        run: |
+          mkdir -p evals/.generated
+          tar -xzf artifacts/snapshot.tar.gz -C evals/.generated
+      - name: Run one task and condition
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          EVJS_EVAL_MODEL: ${{ inputs.model }}
+          EVJS_EVAL_CLI_PACKAGE: ${{ inputs.cli_package }}
+          EVJS_EVAL_RUNS: ${{ inputs.runs }}
+          EVJS_EVAL_SNAPSHOT: ${{ needs.prepare.outputs.snapshot_id }}
+          EVJS_EVAL_TASKS: ${{ matrix.task }}
+          EVJS_EVAL_CONDITION: ${{ matrix.condition }}
+        run: npm run benchmark
+      - name: Save results including failures
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: model-${{ matrix.condition }}-${{ matrix.task }}
+          path: |
+            artifacts/report.json
+            artifacts/expected.json
+            evals/.generated/*/results/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 30
+  aggregate:
+    needs: [prepare, evaluate]
+    if: ${{ always() && needs.prepare.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - name: Download available model shards
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: model-*
+          path: artifacts/shards
+          merge-multiple: false
+      - name: Check the complete campaign roster and aggregate reports
+        if: always()
+        env:
+          EVJS_EVAL_MODEL: ${{ inputs.model }}
+          EVJS_EVAL_CLI_PACKAGE: ${{ inputs.cli_package }}
+          EVJS_EVAL_RUNS: ${{ inputs.runs }}
+          EVJS_EVAL_SNAPSHOT: ${{ needs.prepare.outputs.snapshot_id }}
+        run: node scripts/aggregate-benchmark.mjs
+      - name: Save campaign report including missing jobs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: benchmark-campaign
+          path: |
+            artifacts/campaign.json
+            artifacts/summary.md
+          if-no-files-found: error
+          retention-days: 30

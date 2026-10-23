@@ -1,0 +1,15 @@
+{
+  "include": ["src", "ev.config.ts"],
+  "compilerOptions": {
+    "target": "ESNext",
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "paths": { "@/*": ["./src/*"] },
+    "types": ["node"],
+    "moduleResolution": "Bundler",
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "server-function-mutation",
+  "title": "修复双参数 Server Function mutation 与缓存失效",
+  "category": "server-functions",
+  "docs": ["docs/docs/server-functions.md", "docs/docs/file-conventions.md"],
+  "remove": [],
+  "sourceReferences": [
+    "examples/basic/src/pages/page.tsx",
+    "examples/basic/src/apis/users.server.ts",
+    "e2e/cases/basic.ts",
+    "packages/client/src/server-functions/transport-runtime.ts"
+  ]
+}

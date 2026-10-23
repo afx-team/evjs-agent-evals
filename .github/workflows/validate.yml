@@ -1,0 +1,87 @@
+name: Validate fixtures and Docker
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+    outputs:
+      snapshot_id:
+        description: Frozen snapshot directory name
+        value: ${{ jobs.validate.outputs.snapshot_id }}
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    outputs:
+      snapshot_id: ${{ steps.snapshot.outputs.snapshot_id }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: evals/package-lock.json
+      - name: Install pinned npm and evaluation tools
+        run: |
+          npm install --global npm@11.6.2
+          npm ci --no-audit --no-fund
+          npm ci --prefix evals --no-audit --no-fund
+      - name: Test evaluation tools
+        run: |
+          npm run lint
+          npm test
+      - name: Read framework pin
+        id: pin
+        run: node scripts/ci.mjs pin
+      - name: Check out pinned EVJS source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: ${{ steps.pin.outputs.repository }}
+          ref: ${{ steps.pin.outputs.commit }}
+          path: framework
+          persist-credentials: false
+      - name: Install framework dependencies
+        working-directory: framework
+        env:
+          HUSKY: '0'
+        run: npm ci --no-audit --no-fund
+      - name: Build and freeze snapshot
+        id: snapshot
+        run: npm run ci:prepare
+      - name: Check three experiment configurations
+        run: npm run ci:dry
+      - name: Install browser system dependencies
+        run: evals/node_modules/.bin/playwright install --with-deps chromium
+      - name: Verify six reference solutions and negative controls
+        run: npm run evals:validate
+      - name: Verify reference solution inside the real Docker harness
+        run: node evals/scripts/validate-docker.mjs
+      - name: Write validation summary
+        if: always()
+        run: npm run ci:summary
+      - name: Upload frozen snapshot
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: frozen-snapshot
+          path: artifacts/snapshot.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: validation-evidence
+          path: |
+            evals/results/
+            artifacts/summary.md
+            artifacts/snapshot.json
+          if-no-files-found: warn
+          retention-days: 30

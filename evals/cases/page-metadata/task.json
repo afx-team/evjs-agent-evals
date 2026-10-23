@@ -1,0 +1,18 @@
+{
+  "id": "page-metadata",
+  "title": "修复页面元数据与导航后的恢复行为",
+  "category": "page-configuration",
+  "expectedStarterFailure": { "phase": "behavior" },
+  "docs": [
+    "docs/docs/rendering.md",
+    "docs/docs/project-structure.md",
+    "docs/docs/client-routes.md"
+  ],
+  "remove": [],
+  "sourceReferences": [
+    "packages/client/src/framework/page/page-metadata.ts",
+    "packages/ev/src/_internal/build/output/html/page-metadata-html.ts",
+    "packages/ev/tests/page-config-module.test.ts",
+    "e2e/cases/basic.ts"
+  ]
+}

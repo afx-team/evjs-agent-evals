@@ -1,0 +1,7 @@
+node_modules/
+framework/
+artifacts/
+.env
+.env.*
+!.env.example
+.DS_Store

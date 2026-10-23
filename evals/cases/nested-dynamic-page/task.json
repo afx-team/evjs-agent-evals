@@ -1,0 +1,14 @@
+{
+  "id": "nested-dynamic-page",
+  "title": "嵌套动态团队详情与导航",
+  "category": "routing",
+  "expectedStarterFailure": { "phase": "behavior" },
+  "docs": ["docs/docs/client-routes.md", "docs/docs/project-structure.md"],
+  "remove": [],
+  "sourceReferences": [
+    "packages/ev/src/_internal/build/discovery/page-routes.ts",
+    "packages/client/src/framework/page/page-route.ts",
+    "packages/client/src/framework/page/page-context.ts",
+    "e2e/cases/complex-routing.ts"
+  ]
+}

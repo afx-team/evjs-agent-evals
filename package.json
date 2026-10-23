@@ -1,0 +1,23 @@
+{
+  "name": "evjs-agent-evals-repository",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@11.6.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test evals/scripts/*.test.mjs scripts/*.test.mjs",
+    "evals:prepare": "node evals/scripts/prepare.mjs",
+    "evals:validate": "node evals/scripts/validate.mjs",
+    "evals:test": "node --test evals/scripts/*.test.mjs",
+    "ci:prepare": "node scripts/ci.mjs prepare",
+    "ci:dry": "node scripts/ci.mjs dry",
+    "ci:summary": "node scripts/ci.mjs summary",
+    "benchmark": "node scripts/run-benchmark.mjs",
+    "lint": "biome check ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.5"
+  }
+}
