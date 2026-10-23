@@ -70,6 +70,7 @@ async function checkedCommand(sandbox, command, args, asRoot = false) {
       `EVJS_EVAL_INFRA_SETUP: ${command} ${args.join(" ")} exited ${result.exitCode}\n${result.stderr || result.stdout}`,
     );
   }
+  return result;
 }
 
 /** Make a @vercel/agent-eval 2.6.0 config; never starts a model itself. */
@@ -264,13 +265,20 @@ export function makeExperiment({
         "package-lock.json": fixtureLock,
         ...injected,
       });
-      await checkedCommand(sandbox, "npx", [
-        "--yes",
+      // The native harness runs npm install after setup. Pin the container's
+      // user-global npm too, so that step uses the same lockfile writer as prepare.
+      // agent-eval places the node user's global bin first in its command PATH.
+      await checkedCommand(sandbox, "npm", [
+        "install",
+        "--global",
         "npm@11.6.2",
-        "ci",
         "--no-audit",
         "--no-fund",
       ]);
+      const npmVersion = await checkedCommand(sandbox, "npm", ["--version"]);
+      if (npmVersion.stdout.trim() !== "11.6.2")
+        throw new Error("EVJS_EVAL_INFRA_SETUP: container npm must be 11.6.2");
+      await checkedCommand(sandbox, "npm", ["ci", "--no-audit", "--no-fund"]);
       await checkedCommand(
         sandbox,
         "npx",

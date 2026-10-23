@@ -138,8 +138,9 @@ Browser download and agent execution run as the ordinary `node` user. Setup
 fails explicitly if the hook is unavailable; revalidate this integration before
 upgrading the harness.
 `webResearch: false` disables dedicated web tools, not all shell networking.
-The harness performs `npm install` after setup's `npm ci`; the lock is supplied
-and protected, but this remains a pilot rather than a hermetically offline
+The harness performs `npm install` after setup's `npm ci`; setup pins and verifies
+the container's user-global npm at 11.6.2 so both steps use the same lockfile writer.
+The lock is supplied and protected, but this remains a pilot rather than a hermetically offline
 benchmark. Use a controlled registry/network/image before claiming strict
 cross-machine reproducibility. Baseline can still read installed package code.
 

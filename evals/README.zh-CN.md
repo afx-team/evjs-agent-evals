@@ -114,6 +114,7 @@ CLI 版本、时间预算、框架包和验收规则：
 方法不存在时会明确失败；升级 harness 前必须重新验证这项适配。
 `webResearch: false` 关闭专用网页工具，
 不等于禁止 shell 联网。setup 提供并保护依赖锁，但 harness 在 npm ci 后还会运行 npm install。
+setup 会将容器普通用户的全局 npm 固定并校验为 11.6.2，确保这两步使用相同版本。
 因此当前是试点方案，不应宣称完全离线或跨机器严格复现；正式比较前应控制镜像、网络和 registry。
 baseline 仍可阅读安装包的代码。
 

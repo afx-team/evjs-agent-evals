@@ -138,11 +138,22 @@ try {
   // The native separate verifier repeats project installation after replaying
   // the patch. Exercise that same step, including any lockfile incompatibility.
   progress("native-project-install");
+  const npmVersion = await sandbox.runCommand("npm", ["--version"]);
+  if (npmVersion.exitCode !== 0 || npmVersion.stdout.trim() !== "11.6.2")
+    throw new Error(
+      `Unexpected container npm: ${npmVersion.stdout}${npmVersion.stderr}`,
+    );
+  report.npmVersion = npmVersion.stdout.trim();
   await check("npm", ["install"]);
-  if (
-    sha256(await sandbox.readFile("package-lock.json")) !== manifest.lockSha256
-  )
+  const installedLock = await sandbox.readFile("package-lock.json");
+  if (sha256(installedLock) !== manifest.lockSha256) {
+    writeFileSync(
+      path.join(reportDir, "lock-before.json"),
+      readFileSync(path.join(snapshotDir, "dependencies", "package-lock.json")),
+    );
+    writeFileSync(path.join(reportDir, "lock-after.json"), installedLock);
     throw new Error("Native npm install changed the frozen dependency lock");
+  }
   if (
     sha256(await sandbox.readFile("package.json")) !==
     manifest.packageJsonSha256
