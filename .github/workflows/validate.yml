@@ -59,7 +59,14 @@ jobs:
       - name: Check three experiment configurations
         run: npm run ci:dry
       - name: Install browser system dependencies
-        run: evals/node_modules/.bin/playwright install --with-deps chromium
+        timeout-minutes: 10
+        run: |
+          # The hosted runner's Azure HTTP mirror stalled on font downloads.
+          # Keep Playwright's complete dependency list and use Ubuntu's HTTPS mirror.
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
+          evals/node_modules/.bin/playwright install --with-deps chromium
       - name: Verify six reference solutions and negative controls
         run: npm run evals:validate
       - name: Verify reference solution inside the real Docker harness
